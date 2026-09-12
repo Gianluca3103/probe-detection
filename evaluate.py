@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from dataclasses import asdict
 from pathlib import Path
@@ -20,7 +21,6 @@ from data_loading import (
     ground_truth_from_records,
     load_dataset,
     load_split_records,
-    sha256_file,
 )
 from models.yolo11 import (
     YOLO11ProbeDataset,
@@ -38,6 +38,13 @@ def _resolve_device(requested: str) -> torch.device:
     if device.type == "cuda" and not torch.cuda.is_available():
         raise RuntimeError("CUDA was requested but is not available")
     return device
+
+
+# Hashes the semantic manifest bytes consistently after Git checkout on Windows or Unix.
+# Only newline encoding is normalized; changed paths or ordering still fail verification.
+def _split_manifest_sha256(path: Path) -> str:
+    contents = path.read_bytes().replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+    return hashlib.sha256(contents).hexdigest()
 
 
 #Loads a trained checkpoint into a fresh model and returns it ready for inference
@@ -148,7 +155,7 @@ def main() -> None:
         raise ValueError("Frozen selection does not certify that test data was unused")
     threshold_record = frozen["threshold_selection"]
     #Makes sure the validation split file hasn't changed since the threshold was originally chosen
-    if sha256_file(args.val_split) != threshold_record["split_sha256"]:
+    if _split_manifest_sha256(args.val_split) != threshold_record["split_sha256"]:
         raise ValueError("Validation manifest differs from the frozen selection")
 
     all_records = load_dataset(args.images, args.annotations)

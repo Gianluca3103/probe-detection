@@ -1,6 +1,10 @@
 from __future__ import annotations
 
 import unittest
+import tempfile
+from pathlib import Path
+
+from evaluate import _split_manifest_sha256
 
 from data_loading.evaluation import (
     GroundTruthDetection,
@@ -20,6 +24,25 @@ def _ground_truth(
 
 
 class EvaluationTests(unittest.TestCase):
+    # Git may check the same manifest out with LF or CRLF; provenance must remain portable.
+    def test_split_manifest_hash_ignores_line_ending_encoding(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            lf_path = Path(directory) / "lf.txt"
+            crlf_path = Path(directory) / "crlf.txt"
+            changed_path = Path(directory) / "changed.txt"
+            lf_path.write_bytes(b"image_1.jpg\nimage_2.jpg\n")
+            crlf_path.write_bytes(b"image_1.jpg\r\nimage_2.jpg\r\n")
+            changed_path.write_bytes(b"image_1.jpg\nimage_3.jpg\n")
+
+            self.assertEqual(
+                _split_manifest_sha256(lf_path),
+                _split_manifest_sha256(crlf_path),
+            )
+            self.assertNotEqual(
+                _split_manifest_sha256(lf_path),
+                _split_manifest_sha256(changed_path),
+            )
+
     #Verifies IoU is computed correctly on a simple, hand-checkable 50% overlap
     def test_iou_has_obvious_half_overlap(self) -> None:
         first = BoundingBox(0, 0, 10, 10)
