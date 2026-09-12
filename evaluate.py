@@ -40,11 +40,16 @@ def _resolve_device(requested: str) -> torch.device:
     return device
 
 
-# Hashes the semantic manifest bytes consistently after Git checkout on Windows or Unix.
-# Only newline encoding is normalized; changed paths or ordering still fail verification.
-def _split_manifest_sha256(path: Path) -> str:
-    contents = path.read_bytes().replace(b"\r\n", b"\n").replace(b"\r", b"\n")
-    return hashlib.sha256(contents).hexdigest()
+# Produces hashes for the unchanged manifest under either Git newline checkout mode.
+# Only newline encoding varies; changed paths, ordering, or trailing lines still fail.
+def _split_manifest_sha256_candidates(path: Path) -> set[str]:
+    contents = path.read_bytes()
+    lf_contents = contents.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+    crlf_contents = lf_contents.replace(b"\n", b"\r\n")
+    return {
+        hashlib.sha256(candidate).hexdigest()
+        for candidate in (contents, lf_contents, crlf_contents)
+    }
 
 
 #Loads a trained checkpoint into a fresh model and returns it ready for inference
@@ -155,7 +160,9 @@ def main() -> None:
         raise ValueError("Frozen selection does not certify that test data was unused")
     threshold_record = frozen["threshold_selection"]
     #Makes sure the validation split file hasn't changed since the threshold was originally chosen
-    if _split_manifest_sha256(args.val_split) != threshold_record["split_sha256"]:
+    if threshold_record["split_sha256"] not in _split_manifest_sha256_candidates(
+        args.val_split
+    ):
         raise ValueError("Validation manifest differs from the frozen selection")
 
     all_records = load_dataset(args.images, args.annotations)

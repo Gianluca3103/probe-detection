@@ -4,7 +4,7 @@ import unittest
 import tempfile
 from pathlib import Path
 
-from evaluate import _split_manifest_sha256
+from evaluate import _split_manifest_sha256_candidates
 
 from data_loading.evaluation import (
     GroundTruthDetection,
@@ -35,12 +35,12 @@ class EvaluationTests(unittest.TestCase):
             changed_path.write_bytes(b"image_1.jpg\nimage_3.jpg\n")
 
             self.assertEqual(
-                _split_manifest_sha256(lf_path),
-                _split_manifest_sha256(crlf_path),
+                _split_manifest_sha256_candidates(lf_path),
+                _split_manifest_sha256_candidates(crlf_path),
             )
-            self.assertNotEqual(
-                _split_manifest_sha256(lf_path),
-                _split_manifest_sha256(changed_path),
+            self.assertFalse(
+                _split_manifest_sha256_candidates(lf_path)
+                & _split_manifest_sha256_candidates(changed_path)
             )
 
     #Verifies IoU is computed correctly on a simple, hand-checkable 50% overlap
