@@ -73,10 +73,7 @@ For engine building and TensorRT inference:
 The engine accepts fixed batch-1, 640x400 RGB uint8 frames. It pads eight pixels
 above and below the frame to produce the model's 640x416 tensor, normalizes and
 runs YOLO11-N in FP16, applies the frozen confidence threshold and top-1 NMS,
-then restores coordinates to the original 640x400 frame. The generated engine
-and its build metadata are written to the ignored local `deployment_artifacts/`
-directory and are not committed because TensorRT engines are hardware- and
-runtime-specific.
+then restores coordinates to the original 640x400 frame. 
 
 Build the local engine before the first inference run:
 
