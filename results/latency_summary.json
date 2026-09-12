@@ -1,0 +1,163 @@
+{
+  "gpu": "NVIDIA GeForce RTX 5060 Laptop GPU",
+  "torch": "2.7.1+cu128",
+  "protocol": {
+    "batch_size": 1,
+    "repeats": 20,
+    "images_per_fold": 44,
+    "measurements_per_fold": 880,
+    "warmup_images_per_fold": 132,
+    "fold_order": "rotates and reverses each repeat",
+    "decoded_scope": "RGB CPU array through pinned staging, captured asynchronous H2D, fused GPU preprocessing/FP16 YOLO/embedded NMS/coordinate restoration, packed D2H, independently owned CPU result",
+    "complete_scope": "JPEG file read (warm OS cache), decode, RGB array creation, then decoded_scope",
+    "excluded": [
+      "engine build/load",
+      "graph capture",
+      "camera capture",
+      "visualization"
+    ],
+    "all_test_images_once_in_fold_assignments": true
+  },
+  "folds": [
+    {
+      "fold": 1,
+      "engine_sha256": "0abadf5fb423cd4110fac95e9ab44fe46385cf3075cb1adb8ba5ad9324f0cbb3",
+      "decoded_ms": {
+        "mean_ms": 1.5860092066842215,
+        "median_ms": 1.5543499612249434,
+        "p95_ms": 1.976415031822398,
+        "min_ms": 1.0231999913230538,
+        "max_ms": 4.916700068861246,
+        "fps_from_median": 643.3557596076533
+      },
+      "complete_ms": {
+        "mean_ms": 3.6011560253841295,
+        "median_ms": 3.310800006147474,
+        "p95_ms": 5.216280021704733,
+        "min_ms": 2.254999941214919,
+        "max_ms": 19.331399933435023,
+        "fps_from_median": 302.0418020246484
+      }
+    },
+    {
+      "fold": 2,
+      "engine_sha256": "b4f78f65182408e4127474039c1b22586d6bd22f264305bb61e88d43db1979b8",
+      "decoded_ms": {
+        "mean_ms": 1.575168178665494,
+        "median_ms": 1.539450022391975,
+        "p95_ms": 1.9573450030293313,
+        "min_ms": 0.997499912045896,
+        "max_ms": 4.75750002078712,
+        "fps_from_median": 649.5826337033109
+      },
+      "complete_ms": {
+        "mean_ms": 3.646323407883756,
+        "median_ms": 3.329699975438416,
+        "p95_ms": 5.670934967929495,
+        "min_ms": 2.108599990606308,
+        "max_ms": 10.169600020162761,
+        "fps_from_median": 300.3273590343021
+      }
+    },
+    {
+      "fold": 3,
+      "engine_sha256": "80fe283142772286ac11d8c9c800e7aa94dbbbf5029b5af4f95edce1c0850f9e",
+      "decoded_ms": {
+        "mean_ms": 1.6253290920179675,
+        "median_ms": 1.5716499765403569,
+        "p95_ms": 2.130919927731156,
+        "min_ms": 1.0337000712752342,
+        "max_ms": 4.981899983249605,
+        "fps_from_median": 636.2739890731146
+      },
+      "complete_ms": {
+        "mean_ms": 3.7126705709273335,
+        "median_ms": 3.335150016937405,
+        "p95_ms": 5.758559959940611,
+        "min_ms": 2.110100002028048,
+        "max_ms": 14.845500001683831,
+        "fps_from_median": 299.8365875362566
+      }
+    },
+    {
+      "fold": 4,
+      "engine_sha256": "8a47afbad012f028391a1e60e4b3a2e55d4fd3793451254ae2d08971b5acdd27",
+      "decoded_ms": {
+        "mean_ms": 1.5577527309439823,
+        "median_ms": 1.5255999751389027,
+        "p95_ms": 2.053745038574561,
+        "min_ms": 0.939000048674643,
+        "max_ms": 4.053500015288591,
+        "fps_from_median": 655.4798219034791
+      },
+      "complete_ms": {
+        "mean_ms": 3.5602167070134203,
+        "median_ms": 3.2495500054210424,
+        "p95_ms": 5.390360043384133,
+        "min_ms": 2.1231999853625894,
+        "max_ms": 12.48989999294281,
+        "fps_from_median": 307.73491662899664
+      }
+    },
+    {
+      "fold": 5,
+      "engine_sha256": "e5b9ebba73182ebd4ed250fe088dff5aa5cef605f3305c0ad172b59e94ab6c0b",
+      "decoded_ms": {
+        "mean_ms": 1.5758154524850065,
+        "median_ms": 1.5274499892257154,
+        "p95_ms": 2.1625649358611545,
+        "min_ms": 0.9045000188052654,
+        "max_ms": 5.297999945469201,
+        "fps_from_median": 654.6859190505564
+      },
+      "complete_ms": {
+        "mean_ms": 3.5663221577785653,
+        "median_ms": 3.25660000089556,
+        "p95_ms": 5.317634972743689,
+        "min_ms": 2.113600028678775,
+        "max_ms": 13.73300002887845,
+        "fps_from_median": 307.0687218955357
+      }
+    },
+    {
+      "fold": 6,
+      "engine_sha256": "4bb44e7dbe9a82a4de6fa4e43152263e93b194a8afc6af721b734f3821bb4a83",
+      "decoded_ms": {
+        "mean_ms": 1.676218863973521,
+        "median_ms": 1.6600999515503645,
+        "p95_ms": 2.159195020794868,
+        "min_ms": 0.9602999780327082,
+        "max_ms": 15.18190000206232,
+        "fps_from_median": 602.3733685830795
+      },
+      "complete_ms": {
+        "mean_ms": 3.8413775007938966,
+        "median_ms": 3.6123000318184495,
+        "p95_ms": 5.987244949210434,
+        "min_ms": 2.189000020734966,
+        "max_ms": 16.30500005558133,
+        "fps_from_median": 276.8319328936238
+      }
+    },
+    {
+      "fold": 7,
+      "engine_sha256": "48aae85c493d2451faf48a53f53ab82fb7aefeb18181250b2178199fd5694e15",
+      "decoded_ms": {
+        "mean_ms": 1.6196027269788003,
+        "median_ms": 1.5714999753981829,
+        "p95_ms": 2.0723349472973496,
+        "min_ms": 0.9850999340415001,
+        "max_ms": 4.417899996042252,
+        "fps_from_median": 636.3347220203566
+      },
+      "complete_ms": {
+        "mean_ms": 3.7214356830438855,
+        "median_ms": 3.4996000467799604,
+        "p95_ms": 5.5333249852992585,
+        "min_ms": 2.19290005043149,
+        "max_ms": 9.510000003501773,
+        "fps_from_median": 285.7469386880699
+      }
+    }
+  ]
+}

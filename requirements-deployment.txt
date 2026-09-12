@@ -1,0 +1,7 @@
+-r requirements.txt
+
+# Install a TensorRT build compatible with the target Jetson/CUDA image.
+# The version used during development was 10.16.1.11 on CUDA 12.
+tensorrt-cu12==10.16.1.11; platform_system == "Windows"
+onnx==1.22.0
+onnxslim==0.1.96

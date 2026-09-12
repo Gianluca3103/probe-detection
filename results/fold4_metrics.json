@@ -1,0 +1,50 @@
+{
+  "model": "yolo11_n",
+  "checkpoint_epoch": 358,
+  "checkpoint_best_validation_map50_95": 0.8853464406914586,
+  "threshold_selection": {
+    "split": "validation",
+    "criterion": "maximum F1; ties prefer recall, precision, score margin",
+    "confidence_threshold": 0.08965182304382324,
+    "matching_iou_threshold": 0.5
+  },
+  "validation": {
+    "overall": {
+      "map50_95": 0.8853464406914586,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "mean_iou": 0.9261626999658176,
+      "ground_truth_count": 46,
+      "prediction_count": 46,
+      "true_positives": 46,
+      "false_positives": 0,
+      "false_negatives": 0
+    },
+    "exact_iou_all_images_mean": 0.9261626999658177,
+    "exact_iou_all_images_median": 0.9427012150266836,
+    "exact_iou_all_images_min": 0.718748067622073,
+    "exact_iou_all_images_max": 0.9894622213166893,
+    "exact_iou_definition": "IoU of the confidence-ranked matched prediction; 0 for a missed image"
+  },
+  "test": {
+    "overall": {
+      "map50_95": 0.8203836080429834,
+      "precision": 1.0,
+      "recall": 0.9318181818181818,
+      "f1": 0.9647058823529412,
+      "mean_iou": 0.9247436717474145,
+      "ground_truth_count": 44,
+      "prediction_count": 41,
+      "true_positives": 41,
+      "false_positives": 0,
+      "false_negatives": 3
+    },
+    "exact_iou_all_images_mean": 0.8616929668555454,
+    "exact_iou_all_images_median": 0.9470172626557668,
+    "exact_iou_all_images_min": 0.0,
+    "exact_iou_all_images_max": 0.9910063843856974,
+    "exact_iou_definition": "IoU of the confidence-ranked matched prediction; 0 for a missed image"
+  },
+  "test_images": 44
+}

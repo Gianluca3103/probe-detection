@@ -1,0 +1,54 @@
+{
+  "model": "YOLO11-N",
+  "checkpoint": "C:\\Users\\gianl\\Desktop\\Skill Assesment\\probe_dataset\\checkpoints\\s_benchmark_redo_optimized\\yolo11_n_640x416_constant_500_batch8\\best.pt",
+  "checkpoint_epoch": 489,
+  "epoch_selection": {
+    "split": "validation",
+    "split_path": "C:\\Users\\gianl\\Desktop\\Skill Assesment\\probe_dataset\\splits\\s_benchmark\\val.txt",
+    "split_sha256": "de0b23d3ce0152e70242656b26105c37e20ee2986b8ff73616a592d0cc51a09a",
+    "criterion": "maximum mAP50:95; earliest epoch wins exact ties",
+    "map50_95": 0.9111456488171076,
+    "ranking_file": "C:\\Users\\gianl\\Desktop\\Skill Assesment\\probe_dataset\\checkpoints\\s_benchmark_redo_optimized\\yolo11_n_640x416_constant_500_batch8\\validation_selection\\epoch_validation_metrics.csv"
+  },
+  "threshold_selection": {
+    "split": "validation",
+    "split_path": "C:\\Users\\gianl\\Desktop\\Skill Assesment\\probe_dataset\\splits\\s_benchmark\\val.txt",
+    "split_sha256": "de0b23d3ce0152e70242656b26105c37e20ee2986b8ff73616a592d0cc51a09a",
+    "criterion": "maximum F1; ties prefer recall, precision, score margin",
+    "confidence_threshold": 0.3985197842121124,
+    "matching_iou_threshold": 0.5,
+    "nms_iou_threshold": 0.7
+  },
+  "validation": {
+    "overall": {
+      "map50_95": 0.9111456488171076,
+      "ap50": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "mean_iou": 0.9439781231886887,
+      "ground_truth_count": 46,
+      "prediction_count": 46,
+      "true_positives": 46,
+      "false_positives": 0,
+      "false_negatives": 0
+    },
+    "small_probe": {
+      "map50_95": 0.8718709479222001,
+      "ap50": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "mean_iou": 0.9232362778713785,
+      "ground_truth_count": 17,
+      "prediction_count": 17,
+      "true_positives": 17,
+      "false_positives": 0,
+      "false_negatives": 0
+    },
+    "confidence_threshold": 0.3985197842121124,
+    "matching_iou_threshold": 0.5,
+    "small_relative_area_threshold": 0.04787890625
+  },
+  "test_split_used": false
+}
