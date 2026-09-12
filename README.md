@@ -133,10 +133,15 @@ and frozen selection are preserved in `weights/`.
 
 ## Reproduce validation-threshold selection and test evaluation
 
+The dataset is not included in this repository. Set `$datasetRoot` to the folder
+containing the provided `probe_images/` directory and `probe_labels.json` file.
+
 ```powershell
+$datasetRoot = 'C:\path\to\probe_dataset'
+
 .\.venv\Scripts\python.exe evaluate.py `
-  --images probe_images `
-  --annotations probe_labels.json `
+  --images "$datasetRoot\probe_images" `
+  --annotations "$datasetRoot\probe_labels.json" `
   --val-split splits\benchmark\val.txt `
   --test-split splits\benchmark\test.txt `
   --device cuda `

@@ -33,22 +33,8 @@
       "false_positives": 0,
       "false_negatives": 0
     },
-    "small_probe": {
-      "map50_95": 0.8718709479222001,
-      "ap50": 1.0,
-      "precision": 1.0,
-      "recall": 1.0,
-      "f1": 1.0,
-      "mean_iou": 0.9232362778713785,
-      "ground_truth_count": 17,
-      "prediction_count": 17,
-      "true_positives": 17,
-      "false_positives": 0,
-      "false_negatives": 0
-    },
     "confidence_threshold": 0.3985197842121124,
-    "matching_iou_threshold": 0.5,
-    "small_relative_area_threshold": 0.04787890625
+    "matching_iou_threshold": 0.5
   },
   "test_split_used": false
 }
