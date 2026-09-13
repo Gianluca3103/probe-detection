@@ -94,8 +94,15 @@ the same build command again on each deployment device.
 
 ## Reproduce the final training run
 
+The dataset is external to this repository. Set `$datasetRoot` to the folder
+containing `probe_images/` and `probe_labels.json` before starting training.
+
 ```powershell
+$datasetRoot = 'C:\path\to\probe_dataset'
+
 .\.venv\Scripts\python.exe -u -m models.yolo11 `
+  --images "$datasetRoot\probe_images" `
+  --annotations "$datasetRoot\probe_labels.json" `
   --pretrained-checkpoint weights\yolo11n_coco.pt `
   --checkpoint-dir checkpoints\yolo11_n_640x416_constant_500_batch8 `
   --train-split splits\benchmark\train.txt `

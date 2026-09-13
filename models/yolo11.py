@@ -883,11 +883,21 @@ def _metrics_row(
     }
 
 
-#Defines every training CLI flag and its default; most have their own help= text below
+#Defines the training CLI; dataset paths are explicit because data is not shipped in the repo
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--images", type=Path, default=Path("probe_images"))
-    parser.add_argument("--annotations", type=Path, default=Path("probe_labels.json"))
+    parser.add_argument(
+        "--images",
+        type=Path,
+        required=True,
+        help="Path to the external directory containing the dataset images.",
+    )
+    parser.add_argument(
+        "--annotations",
+        type=Path,
+        required=True,
+        help="Path to the external probe_labels.json annotation file.",
+    )
     parser.add_argument("--train-split", type=Path, default=Path("splits/train.txt"))
     parser.add_argument("--val-split", type=Path, default=Path("splits/val.txt"))
     parser.add_argument(
