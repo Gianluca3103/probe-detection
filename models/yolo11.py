@@ -759,30 +759,6 @@ def _save_checkpoint(
     torch.save(state, path)
 
 
-def _save_deferred_validation_checkpoint(
-    path: Path,
-    *,
-    epoch: int,
-    ema: Any,
-    run_config: dict[str, Any],
-) -> None:
-    """Save only the full-precision EMA weights needed for post-hoc validation."""
-
-    #Lighter than _save_checkpoint: these never need to resume training, only be evaluated later
-    torch.save(
-        {
-            "epoch": epoch,
-            "ema": ema.ema.state_dict(),
-            "ema_updates": ema.updates,
-            "best_validation_map50_95": None,
-            "selection_metric": "validation_map50_95_pending",
-            "checkpoint_role": "deferred_validation_candidate",
-            "run_config": run_config,
-        },
-        path,
-    )
-
-
 #Checks that a resumed run's settings match the checkpoint's original settings, so a run can't
 #silently continue with different, now-inconsistent hyperparameters
 def _validate_resume_configuration(
@@ -798,11 +774,13 @@ def _validate_resume_configuration(
             f"--epochs is the total target and must exceed resumed epoch {start_epoch}"
         )
     previous = dict(checkpoint["run_config"])
+    if previous.get("defer_validation") or previous.get("deferred_validation", {}).get("enabled"):
+        raise ValueError("Resuming deferred-validation runs is no longer supported")
     #Compares every simple setting directly between the checkpoint and the current command
     scalar_fields = (
         "batch_size", "validation_batch_size", "learning_rate",
         "optimizer", "momentum", "weight_decay", "dropout", "warmup_epochs",
-        "nominal_batch_size", "augmentation_policy", "seed", "defer_validation",
+        "nominal_batch_size", "augmentation_policy", "seed",
         "amp",
     )
     mismatches = []
@@ -842,21 +820,6 @@ def _validate_resume_configuration(
     if mismatches:
         raise ValueError("Resume configuration mismatch: " + "; ".join(mismatches))
     return start_epoch, previous
-
-
-#Builds one CSV row for an epoch when validation was skipped (deferred-validation mode)
-def _training_only_metrics_row(
-    epoch: int,
-    train_loss: float,
-    optimizer_steps: int,
-    learning_rate: float,
-) -> dict[str, Any]:
-    return {
-        "epoch": epoch,
-        "train_loss": train_loss,
-        "optimizer_steps": optimizer_steps,
-        "learning_rate": learning_rate,
-    }
 
 
 #Builds one CSV row combining training and validation metrics for a normal training epoch
@@ -979,22 +942,6 @@ def _parse_args() -> argparse.Namespace:
         help="Maximum deterministic validation batches used for early stopping.",
     )
     parser.add_argument(
-        "--defer-validation",
-        action="store_true",
-        help=(
-            "Skip all validation during training and save one evaluation-only EMA "
-            "checkpoint per epoch for post-hoc validation selection."
-        ),
-    )
-    parser.add_argument(
-        "--epoch-checkpoint-dir",
-        type=Path,
-        help=(
-            "Directory for deferred-validation epoch candidates; defaults to "
-            "CHECKPOINT_DIR/epoch_candidates."
-        ),
-    )
-    parser.add_argument(
         "--augmentation-policy",
         choices=("shared", "yolo"),
         default="shared",
@@ -1052,14 +999,6 @@ def main() -> None:
         raise ValueError("Early-stopping patience cannot be negative")
     if args.validation_loss_batches is not None and args.validation_loss_batches <= 0:
         raise ValueError("Validation-loss batches must be positive")
-    if args.defer_validation and args.learning_rate_schedule != "linear":
-        raise ValueError("Deferred validation requires the validation-independent linear schedule")
-    if args.defer_validation and args.early_stopping_patience:
-        raise ValueError("Deferred validation is incompatible with early stopping")
-    if args.defer_validation and args.validation_loss_batches is not None:
-        raise ValueError("Deferred validation cannot calculate validation loss")
-    if args.epoch_checkpoint_dir is not None and not args.defer_validation:
-        raise ValueError("--epoch-checkpoint-dir requires --defer-validation")
 
     #If resuming, load the old checkpoint now and check its settings match this run's
     resume_checkpoint = None
@@ -1117,25 +1056,23 @@ def main() -> None:
         pin_memory=device.type == "cuda",
         persistent_workers=args.num_workers > 0,
     )
-    val_loader = None
-    if not args.defer_validation:
-        val_dataset = YOLO11ProbeDataset(
-            val_records,
-            training=False,
-            seed=args.seed,
-            input_size=input_size,
-            cache_images=args.cache_images,
-        )
-        val_loader = DataLoader(
-            val_dataset,
-            batch_size=args.validation_batch_size or args.batch_size,
-            shuffle=False,
-            num_workers=args.num_workers,
-            collate_fn=collate_yolo_batch,
-            drop_last=False,
-            pin_memory=device.type == "cuda",
-            persistent_workers=args.num_workers > 0,
-        )
+    val_dataset = YOLO11ProbeDataset(
+        val_records,
+        training=False,
+        seed=args.seed,
+        input_size=input_size,
+        cache_images=args.cache_images,
+    )
+    val_loader = DataLoader(
+        val_dataset,
+        batch_size=args.validation_batch_size or args.batch_size,
+        shuffle=False,
+        num_workers=args.num_workers,
+        collate_fn=collate_yolo_batch,
+        drop_last=False,
+        pin_memory=device.type == "cuda",
+        persistent_workers=args.num_workers > 0,
+    )
 
     #Builds the model, optionally with feature dropout, plus a matching optimizer
     model = _build_official_model(args.pretrained_checkpoint, device)
@@ -1229,9 +1166,6 @@ def main() -> None:
     else:
         training_augmentation = {"implementation": "shared"}
 
-    epoch_checkpoint_dir = args.epoch_checkpoint_dir or (
-        args.checkpoint_dir / "epoch_candidates"
-    )
     #A resumed run keeps recording the original schedule, not a newly built one
     if previous_run_config is not None:
         schedule_record = previous_run_config["learning_rate_schedule"]
@@ -1272,17 +1206,7 @@ def main() -> None:
         "gradient_accumulation": accumulation,
         "amp_initial_scale": amp_initial_scale if amp_enabled else None,
         "test_split_used": False,
-        "validation_during_training": not args.defer_validation,
-        "deferred_validation": {
-            "enabled": args.defer_validation,
-            "candidate_checkpoint_dir": (
-                str(epoch_checkpoint_dir) if args.defer_validation else None
-            ),
-            "candidate_checkpoint_format": (
-                "evaluation_only_full_precision_ema" if args.defer_validation else None
-            ),
-            "selection_metric": "validation_map50_95",
-        },
+        "validation_during_training": True,
         "native_ultralytics_augmentations_used": args.augmentation_policy == "yolo",
         "learning_rate_schedule": schedule_record,
         "training_augmentation": training_augmentation,
@@ -1319,19 +1243,6 @@ def main() -> None:
     (args.checkpoint_dir / "run_config.json").write_text(
         json.dumps(run_config, indent=2), encoding="utf-8"
     )
-    #Refuses to silently overwrite deferred-validation checkpoints from a previous run
-    if args.defer_validation:
-        epoch_checkpoint_dir.mkdir(parents=True, exist_ok=True)
-        collisions = [
-            epoch_checkpoint_dir / f"epoch_{epoch + 1:04d}.pt"
-            for epoch in range(start_epoch, args.epochs)
-            if (epoch_checkpoint_dir / f"epoch_{epoch + 1:04d}.pt").exists()
-        ]
-        if collisions:
-            raise FileExistsError(
-                f"Refusing to overwrite deferred candidates: {collisions[:3]}"
-            )
-
     metrics_path = args.checkpoint_dir / "metrics.csv"
     best_map50_95 = float("-inf")
     epochs_without_improvement = 0
@@ -1358,7 +1269,7 @@ def main() -> None:
             if existing_fields is not None
             else None
         )
-        #The main training loop: one epoch of training, then (unless deferred) one validation pass
+        #Each training epoch is followed by validation and automatic checkpoint selection.
         for epoch in range(start_epoch, args.epochs):
             train_loss, optimizer_steps = _train_one_epoch(
                 model,
@@ -1380,18 +1291,8 @@ def main() -> None:
             ema.update_attr(
                 model, include=("yaml", "nc", "args", "names", "stride")
             )
-            #Three modes: skip validation entirely, validate and also track loss for early
-            #stopping, or validate without the extra loss computation
-            if args.defer_validation:
-                row = _training_only_metrics_row(
-                    epoch + 1,
-                    train_loss,
-                    optimizer_steps,
-                    optimizer.param_groups[-1]["lr"],
-                )
-                result = None
-            elif early_stopping:
-                assert val_loader is not None
+            #Early stopping also records diagnostic validation loss.
+            if early_stopping:
                 result, validation_loss = _validation_pass(
                     ema.ema,
                     val_loader,
@@ -1414,7 +1315,6 @@ def main() -> None:
                     validation_loss=validation_loss,
                 )
             else:
-                assert val_loader is not None
                 result = _validate(
                     ema.ema,
                     val_loader,
@@ -1432,26 +1332,16 @@ def main() -> None:
                     optimizer.param_groups[-1]["lr"],
                     result,
                 )
-            #Creates the CSV header from the first row's own keys, since the columns differ
-            #depending on which of the three modes above ran
+            #Creates the CSV header from the first epoch's metrics.
             if writer is None:
                 writer = csv.DictWriter(metrics_file, fieldnames=list(row))
                 writer.writeheader()
             writer.writerow(row)
             metrics_file.flush()
 
-            improved = (
-                result is not None and result.overall.map50_95 > best_map50_95
-            )
-            #Deferred mode saves every epoch as a candidate; otherwise only a new best gets saved
-            if args.defer_validation:
-                _save_deferred_validation_checkpoint(
-                    epoch_checkpoint_dir / f"epoch_{epoch + 1:04d}.pt",
-                    epoch=epoch + 1,
-                    ema=ema,
-                    run_config=run_config,
-                )
-            elif improved:
+            improved = result.overall.map50_95 > best_map50_95
+            #Only a strict improvement replaces best.pt; exact ties keep the earlier epoch.
+            if improved:
                 best_map50_95 = result.overall.map50_95
                 if early_stopping:
                     epochs_without_improvement = 0
@@ -1470,7 +1360,6 @@ def main() -> None:
                 epochs_without_improvement += 1
             #The plateau schedule needs this epoch's validation score to decide whether to react
             if args.learning_rate_schedule == "plateau":
-                assert result is not None
                 scheduler.step(result.overall.map50_95)
             #Always overwrites "last.pt" so training can resume from the most recent epoch
             _save_checkpoint(
@@ -1481,15 +1370,10 @@ def main() -> None:
                 optimizer=optimizer,
                 scheduler=scheduler,
                 scaler=scaler,
-                best_map50_95=(None if args.defer_validation else best_map50_95),
+                best_map50_95=best_map50_95,
                 run_config=run_config,
             )
-            if args.defer_validation:
-                print(
-                    f"Training epoch {epoch + 1}: loss={train_loss:.4f}, "
-                    f"lr={optimizer.param_groups[-1]['lr']:.8f}; validation deferred"
-                )
-            elif early_stopping:
+            if early_stopping:
                 print(
                     f"Validation epoch {epoch + 1}: loss={validation_loss:.4f}, "
                     f"mAP50:95={result.overall.map50_95:.4f}, "
@@ -1518,11 +1402,7 @@ def main() -> None:
                 print(f"Early stopping at epoch {epoch + 1}")
                 break
 
-    if args.defer_validation:
-        print(f"Deferred-validation candidates: {epoch_checkpoint_dir}")
-        print("No best checkpoint exists until post-hoc validation selection completes.")
-    else:
-        print(f"Best validation mAP50:95: {best_map50_95:.4f}")
+    print(f"Best validation mAP50:95: {best_map50_95:.4f}")
     print(f"Checkpoints and metrics: {args.checkpoint_dir}")
 
 

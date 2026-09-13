@@ -92,7 +92,7 @@ annotated images, `detections.csv`, and `inference_summary.json`.
 TensorRT engines are tied to their GPU architecture and TensorRT stack, so run
 the same build command again on each deployment device.
 
-## Reproduce the final training run
+## Train a new model
 
 The dataset is external to this repository. Set `$datasetRoot` to the folder
 containing `probe_images/` and `probe_labels.json` before starting training.
@@ -130,15 +130,25 @@ $datasetRoot = 'C:\path\to\probe_dataset'
   --early-stopping-patience 0 `
   --confidence-threshold 0.25 `
   --matching-iou-threshold 0.5 `
-  --nms-iou-threshold 0.7 `
-  --defer-validation
+  --nms-iou-threshold 0.7
 ```
 
-Deferred validation saves one evaluation-only EMA checkpoint per epoch and does
-not use validation performance during optimization. The final run configuration
-and frozen selection are preserved in `weights/`.
+Training validates after every epoch and automatically saves `best.pt` when
+validation mAP50:95 improves. It also saves `last.pt` for resuming training,
+`metrics.csv`, and `run_config.json` in the checkpoint directory. No separate
+checkpoint-selection step is required. Deferred validation is not supported.
 
-## Reproduce validation-threshold selection and test evaluation
+For a different dataset, provide compatible annotations and replace the training
+and validation split manifests. The command above uses the final model's training
+hyperparameters, with validation performed during training. The historical
+configuration and frozen selection for the supplied weights remain in `weights/`.
+
+`--confidence-threshold` sets the operating threshold for validation precision,
+recall, and F1; training does not automatically tune it. The supplied frozen
+threshold belongs to the supplied model and should be reassessed on validation
+data for a newly trained model.
+
+## Evaluate the supplied model with its frozen threshold
 
 The dataset is not included in this repository. Set `$datasetRoot` to the folder
 containing the provided `probe_images/` directory and `probe_labels.json` file.
